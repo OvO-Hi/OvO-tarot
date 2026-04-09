@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 스크롤이 부드럽게 보이도록 (선택 사항) */
+html {
+  scroll-behavior: smooth;
+}
+
+/**
+ * 리딩 본문(ReactMarkdown): ## 헤더 바로 다음 문단과의 간격
+ * - h2: margin-bottom 12px → ReadingResult의 h2에 mb-3(Tailwind)로 동일 적용
+ * - h2 다음 첫 p: margin-top 8px → 여기서만 추가 (모든 p에 mt를 주면 문단 사이 간격이 과해질 수 있음)
+ */
+article.reading-md h2 + p {
+  margin-top: 8px;
+}

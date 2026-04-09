@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "app/api/reading/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/analyze/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/followup/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}

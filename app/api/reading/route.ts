@@ -1,0 +1,55 @@
+import { NextRequest, NextResponse } from 'next/server'
+import Anthropic from '@anthropic-ai/sdk'
+import { drawRandomCards, assignReversals } from '@/lib/tarot-data'
+import { buildReadingPrompt } from '@/lib/prompt-builder'
+import type { Spread, Tone, Category, DrawnCard } from '@/types/tarot'
+
+const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
+export async function POST(req: NextRequest) {
+  try {
+    const { situation, tone, spread, detectedCategories } = await req.json() as {
+      situation: string
+      tone: Tone
+      spread: Spread
+      detectedCategories: Category[]
+    }
+
+    // 1. DB에서 랜덤 카드 뽑기
+    const cards = await drawRandomCards(spread.cardCount)
+    const cardsWithReversals = assignReversals(cards)
+
+    // 2. DrawnCard 형태로 변환 (포지션 번호 부여)
+    const drawnCards: DrawnCard[] = cardsWithReversals.map(({ card, isReversed }, i) => ({
+      card,
+      position: i + 1,
+      isReversed,
+    }))
+
+    // 3. 프롬프트 빌드
+    const prompt = buildReadingPrompt({
+      situation,
+      tone,
+      spread,
+      drawnCards,
+      detectedCategories,
+    })
+
+    // 4. Claude API 호출
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4096,
+      messages: [{ role: 'user', content: prompt }],
+    })
+
+    const reading = message.content
+      .filter((b) => b.type === 'text')
+      .map((b) => b.text)
+      .join('')
+
+    return NextResponse.json({ reading, drawnCards })
+  } catch (error) {
+    console.error('[/api/reading] error:', error)
+    return NextResponse.json({ error: '리딩 중 오류가 발생했습니다.' }, { status: 500 })
+  }
+}
