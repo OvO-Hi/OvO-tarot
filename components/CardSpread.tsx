@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { DrawnCard, Spread } from '@/types/tarot'
 
 export interface CardSpreadProps {
@@ -76,15 +76,14 @@ interface SlotProps {
 }
 
 function PositionSlot({ meaning, children, onClick, clickable, revealed }: SlotProps) {
-  const shellClass =
-    'relative h-44 w-[7.25rem] sm:h-52 sm:w-[8.25rem] [perspective:1000px]'
+  /** 모든 스프레드에서 카드 픽셀 크기를 통일해 그리드 정렬이 흐트러지지 않게 합니다 */
+  const shellClass = 'relative h-48 w-32 [perspective:1000px]'
   return (
     <div className="flex flex-col items-center gap-2">
       {/**
-       * 포지션 텍스트 길이(1줄/2줄)와 관계없이 카드의 y축 위치가 흔들리지 않도록
-       * 텍스트 영역 높이를 고정(h-[40px])하고, 텍스트는 상단 정렬(items-start)합니다.
+       * 포지션 텍스트: 높이 h-10 고정 + 카드 너비(w-32)에 맞춘 max-w로 줄바꿈만 허용합니다.
        */}
-      <p className="flex h-[40px] max-w-[10rem] items-start justify-center whitespace-normal break-keep break-words text-center text-[10px] leading-snug text-[#6e6e73] sm:max-w-[11rem] sm:text-xs">
+      <p className="flex h-10 max-w-32 items-start justify-center whitespace-normal break-keep break-words text-center text-[10px] leading-snug text-[#6e6e73] sm:text-xs">
         {meaning}
       </p>
       <button
@@ -156,61 +155,44 @@ function FlipWrapper({
   )
 }
 
+/** 2열 행의 카드 간격 (행 사이는 flex-col gap-4) */
+const rowGrid = 'grid grid-cols-2 gap-4'
+
 /**
- * 카드 수에 따라 레이아웃을 바꿉니다.
- * - 3장: 한 줄
- * - 5장: 2-2-1 (피라미드형 배치)
- * - 7장: 위 3 · 아래 4
+ * 카드를 앞에서부터 2장씩 묶어(chunk) 행을 만듭니다.
+ * - 1장: 포지션+카드 묶음을 스프레드 영역 안에서 가로·세로 중앙에 둡니다.
+ * - 2장 이상: 각 행을 flex justify-center로 감싸고, 2장이면 2열 grid, 1장(마지막 홀수)이면 그 한 칸만 중앙 정렬됩니다.
  */
-function SpreadGrid({
-  count,
-  children,
-}: {
-  count: number
-  children: React.ReactNode[]
-}) {
-  if (count === 3) {
+function chunkPairs(nodes: ReactNode[]): ReactNode[][] {
+  const rows: ReactNode[][] = []
+  for (let i = 0; i < nodes.length; i += 2) {
+    rows.push(nodes.slice(i, i + 2))
+  }
+  return rows
+}
+
+function SpreadGrid({ children }: { children: ReactNode[] }) {
+  if (children.length === 0) return null
+
+  if (children.length === 1) {
     return (
-      <div className="flex flex-wrap justify-center gap-6 sm:gap-10">
-        {children}
+      <div className="flex min-h-[clamp(16rem,42vh,30rem)] w-full flex-col items-center justify-center py-8">
+        {children[0]}
       </div>
     )
   }
-  if (count === 5) {
-    const [a, b, c, d, e] = children
-    return (
-      <div className="flex flex-col items-center gap-8">
-        <div className="flex flex-wrap justify-center gap-6 sm:gap-12">
-          {a}
-          {b}
+
+  const rows = chunkPairs(children)
+
+  return (
+    <div className="flex w-full flex-col items-center gap-4">
+      {rows.map((row, i) => (
+        <div key={i} className="flex w-full justify-center">
+          {row.length === 2 ? <div className={rowGrid}>{row}</div> : row[0]}
         </div>
-        <div className="flex flex-wrap justify-center gap-6 sm:gap-12">
-          {c}
-          {d}
-        </div>
-        <div className="flex justify-center">{e}</div>
-      </div>
-    )
-  }
-  if (count === 7) {
-    const [a, b, c, d, e, f, g] = children
-    return (
-      <div className="flex flex-col items-center gap-6">
-        <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
-          {a}
-          {b}
-          {c}
-        </div>
-        <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
-          {d}
-          {e}
-          {f}
-          {g}
-        </div>
-      </div>
-    )
-  }
-  return <div className="flex flex-wrap justify-center gap-6">{children}</div>
+      ))}
+    </div>
+  )
 }
 
 export default function CardSpread({
@@ -221,7 +203,6 @@ export default function CardSpread({
   drawLoading,
 }: CardSpreadProps) {
   const positions = [...spread.positions].sort((a, b) => a.position - b.position)
-  const n = positions.length
   /**
    * 카드 공개 상태를 "인덱스별"로 관리합니다.
    * 기존 revealedCount 기반(index < revealedCount) 방식은 순서 강제에 유리하지만,
@@ -289,7 +270,7 @@ export default function CardSpread({
       </h2>
       <p className="mb-10 text-center text-xs text-[#6e6e73]">카드를 하나씩 탭해서 뒤집어보세요</p>
 
-      <SpreadGrid count={n}>{slots}</SpreadGrid>
+      <SpreadGrid>{slots}</SpreadGrid>
       {revealedCount < drawnCards.length && (
         <p className="mt-8 text-center text-xs text-[#6e6e73]">
           {/** 안내 줄 장식: 🌸 → ◈ (톤 선택 기호와 통일) */}

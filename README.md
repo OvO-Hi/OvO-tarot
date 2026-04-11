@@ -1,90 +1,117 @@
-# 🔮 타로 리딩 웹앱
+# OvO TAROT
 
-개인화 타로 리딩 서비스. Claude AI + PostgreSQL + Next.js 기반.
+Claude AI와 PostgreSQL을 사용하는 개인화 타로 리딩 웹앱입니다. 상황에 맞는 스프레드를 설계하고, 뽑은 카드로 해석을 제공합니다.
+
+**배포:** [https://ovo-tarot.vercel.app](https://ovo-tarot.vercel.app)
+
+---
+
+## 주요 기능
+
+- **비밀번호 접근 제어** — 관리자·일반 사용자 역할로 진입 (서버 검증)
+- **시간제 일반 사용자 비밀번호** — 관리자 패널에서 유효 시간(분)을 정해 임시 비밀번호 발급
+- **AI 상황 분석 + 맞춤 스프레드** — 입력한 상황·톤을 반영해 스프레드와 질문 흐름 설계
+- **다양한 스프레드** — 카드 수에 따른 배치 (1 / 3 / 5 / 6 / 7 / 10장 등)
+- **카드 플립** — 뒷면에서 앞면으로 넘기는 플립 애니메이션
+- **추가 질문** — 리딩 이후 이어서 질문·답변 (일부 흐름에서 카드 연동)
+- **리딩 저장** — 캡처 영역을 독립 HTML로 열어 인쇄·PDF·파일 저장에 활용
+
+---
+
+## 기술 스택
+
+| 구분 | 사용 |
+|------|------|
+| 프레임워크 | **Next.js 14** (App Router) |
+| 언어 | **TypeScript** |
+| 스타일 | **Tailwind CSS** |
+| 데이터베이스 | **PostgreSQL** ([Neon](https://neon.tech) 등 호환) |
+| AI | **Claude API** (Anthropic) |
+| 배포 | **Vercel** |
 
 ---
 
 ## 세팅 순서
 
 ### 1. 패키지 설치
+
 ```bash
 npm install
 ```
 
 ### 2. 환경변수 설정
+
 ```bash
 cp .env.local.example .env.local
-# .env.local 열어서 키 값 채우기
+# .env.local을 열어 값을 채웁니다
 ```
 
-필요한 키:
-- `ANTHROPIC_API_KEY` → https://console.anthropic.com
-- `DATABASE_URL` → https://neon.tech (무료 PostgreSQL)
+필요한 변수 예시:
+
+- `ANTHROPIC_API_KEY` — [Anthropic Console](https://console.anthropic.com)
+- `DATABASE_URL` — Neon 등 PostgreSQL 연결 문자열
+
+인증용 `auth_config` 테이블·초기 비밀번호는 프로젝트의 마이그레이션/시드 스크립트를 따릅니다.
 
 ### 3. DB 세팅 + 카드 데이터 시딩
+
 ```bash
 npm run seed
 ```
-→ `tarot_cards` 테이블 생성 + 78장 카드 데이터 삽입
+
+`tarot_cards` 테이블과 78장 카드 데이터가 준비됩니다.
 
 ### 4. 개발 서버 실행
+
 ```bash
 npm run dev
 ```
 
 ### 5. Vercel 배포
+
 ```bash
-# Vercel CLI 설치 (처음 한 번만)
 npm i -g vercel
-
-# 배포
 vercel
-
-# 환경변수 설정 (Vercel 대시보드 또는 CLI)
-vercel env add ANTHROPIC_API_KEY
-vercel env add DATABASE_URL
 ```
+
+Vercel 대시보드 또는 CLI에서 `ANTHROPIC_API_KEY`, `DATABASE_URL` 등 환경변수를 동일하게 설정합니다.
 
 ---
 
-## 폴더 구조
+## 폴더 구조 (요약)
 
 ```
-tarot-app/
 ├── app/
-│   ├── page.tsx              # 메인 페이지 (Cursor 담당)
+│   ├── page.tsx                 # 메인 UI·플로우
+│   ├── layout.tsx
 │   └── api/
-│       ├── analyze/          # 상황 분석 + 스프레드 설계
-│       ├── reading/          # 카드 뽑기 + 리딩 생성
-│       └── followup/         # 추가 질문
-├── components/               # UI 컴포넌트 (Cursor 담당)
-├── lib/
-│   ├── db.ts                 # DB 연결
-│   ├── tarot-data.ts         # 카드 쿼리 함수
-│   └── prompt-builder.ts     # 프롬프트 조립
-├── scripts/
-│   └── seed-cards.ts         # 카드 데이터 시딩 (78장)
-├── types/
-│   └── tarot.ts              # 공용 타입
-├── CLAUDE.md                 # Claude Code 지시서
-└── .cursorrules              # Cursor 지시서
+│       ├── analyze/             # 상황 분석 + 스프레드 설계
+│       ├── reading/             # 카드 뽑기 + 리딩 생성
+│       ├── followup/            # 추가 질문
+│       └── auth/                # 비밀번호 검증·갱신·현재 사용자 비밀번호 조회
+├── components/                  # UI 컴포넌트
+├── lib/                         # DB, 카드 쿼리, 프롬프트 조립
+├── scripts/                     # 시딩 등 스크립트
+├── types/                       # 공용 타입
+├── CLAUDE.md
+└── .cursorrules
 ```
-
----
-
-## 역할 분담
-
-| 도구 | 담당 |
-|------|------|
-| **Claude Code** | DB, API, 프롬프트 로직 |
-| **Cursor** | UI, 스타일, 애니메이션, 저장 기능 |
 
 ---
 
 ## API 엔드포인트
 
-| 엔드포인트 | 역할 |
-|------------|------|
+| 메서드 · 경로 | 역할 |
+|---------------|------|
 | `POST /api/analyze` | 상황 분석 + 스프레드 설계 |
 | `POST /api/reading` | 카드 뽑기 + 리딩 생성 |
 | `POST /api/followup` | 추가 질문 답변 |
+| `POST /api/auth/verify` | 접근 비밀번호 검증 (관리자/사용자) |
+| `POST /api/auth/update` | 관리자 비밀번호 변경·일반 사용자 임시 비밀번호 발급 |
+| `GET /api/auth/current-user-password` | 현재 유효한 일반 사용자 비밀번호 조회 (관리 UI용) |
+
+---
+
+## 라이선스 및 크레딧
+
+프로젝트 정책에 맞게 저장소 루트의 라이선스 파일을 확인하세요.
