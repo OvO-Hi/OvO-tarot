@@ -46,7 +46,7 @@ export default function SituationForm({ onSubmit }: SituationFormProps) {
           value={situation}
           onChange={(e) => setSituation(e.target.value)}
           rows={6}
-          placeholder="예: 현재 직장에서 2년째 일하고 있는데..."
+          placeholder="예: 학교에서 만난 친구가 있는데, 요즘 사이가 멀어져서..."
           className="w-full resize-y rounded-2xl border border-[#e0e0e5] bg-[#ffffff] px-4 py-3 text-[#2c2c2e] placeholder:text-[#6e6e73]/70 focus:border-[#4a6fa5] focus:outline-none focus:ring-2 focus:ring-[#4a6fa5]/20"
         />
       </div>
