@@ -96,7 +96,15 @@ export default function SiteChrome({
       <footer className="mt-auto px-4 py-8 text-center">
         {footerAddon != null && <div className="mb-4">{footerAddon}</div>}
         <div className="mx-auto max-w-lg rounded-full bg-white/50 px-4 py-3 text-[10px] text-[#6e6e73] backdrop-blur-sm">
-          ✦ by @Tarot_Lariatte · powered by Claude ✦
+          {/** 푸터 크레딧: OvO-Hi GitHub 프로필로 연결 (새 탭, 보안용 rel 유지) */}
+          <a
+            href="https://github.com/OvO-Hi"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block cursor-pointer text-inherit no-underline transition-opacity hover:opacity-70"
+          >
+            ✦ by OvO-Hi ✦
+          </a>
         </div>
       </footer>
     </div>
