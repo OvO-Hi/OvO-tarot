@@ -1,5 +1,7 @@
 'use client'
 
+import type { ReactNode } from 'react'
+
 export type MainTab = 'reading' | 'guestbook'
 
 interface SiteChromeProps {
@@ -7,7 +9,9 @@ interface SiteChromeProps {
   onTabChange: (t: MainTab) => void
   /** 로고 영역 클릭 시 처음 화면으로 — app/page에서 state 초기화와 연결 */
   onHome: () => void
-  children: React.ReactNode
+  children: ReactNode
+  /** 푸터 크레딧 위·아래에 추가 UI(예: 관리자 전용 버튼)를 넣을 때 사용합니다 */
+  footerAddon?: ReactNode
 }
 
 /**
@@ -20,7 +24,13 @@ interface SiteChromeProps {
  * - 헤더 장식: 이모지 꽃(🌸) 대신 ✦ 기호로 통일(요청사항).
  * - 탭: 활성은 슬레이트 블루 그라데이션, 비활성은 흰 배경 + 회색 글자.
  */
-export default function SiteChrome({ activeTab, onTabChange, onHome, children }: SiteChromeProps) {
+export default function SiteChrome({
+  activeTab,
+  onTabChange,
+  onHome,
+  children,
+  footerAddon,
+}: SiteChromeProps) {
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-[#f5f5f7] to-[#ffffff]">
       <header className="px-4 pb-2 pt-10 text-center sm:pt-14">
@@ -84,6 +94,7 @@ export default function SiteChrome({ activeTab, onTabChange, onHome, children }:
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 sm:px-6">{children}</main>
 
       <footer className="mt-auto px-4 py-8 text-center">
+        {footerAddon != null && <div className="mb-4">{footerAddon}</div>}
         <div className="mx-auto max-w-lg rounded-full bg-white/50 px-4 py-3 text-[10px] text-[#6e6e73] backdrop-blur-sm">
           ✦ by @Tarot_Lariatte · powered by Claude ✦
         </div>

@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useState } from 'react'
+import AdminPanel from '@/components/AdminPanel'
+import PasswordGate from '@/components/PasswordGate'
 import SiteChrome, { type MainTab } from '@/components/SiteChrome'
 import SituationForm from '@/components/SituationForm'
 import StepLoading from '@/components/StepLoading'
@@ -20,6 +22,13 @@ import type { AnalysisResult, DrawnCard, Tone } from '@/types/tarot'
 type Step = 1 | 2 | 3 | 4 | 5 | 6
 
 export default function HomePage() {
+  /**
+   * 접근 제어: null이면 비밀번호 게이트만 보여 주고, 통과 후 admin/user 역할을 유지합니다.
+   * 홈(로고) 클릭 시에도 role은 건드리지 않고 리딩 플로우만 step 1로 되돌립니다.
+   */
+  const [role, setRole] = useState<'admin' | 'user' | null>(null)
+  const [adminPanelOpen, setAdminPanelOpen] = useState(false)
+
   const [tab, setTab] = useState<MainTab>('reading')
   const [step, setStep] = useState<Step>(1)
 
@@ -165,6 +174,7 @@ export default function HomePage() {
    * 상단 로고(✦ + OvO TAROT) 클릭 시: 리딩 진행 중이면 확인 후 전체 초기화·step 1.
    * step 1이면 확인 없이 바로 초기화(이미 처음이므로 부작용 거의 없음).
    * 방명록 탭이어도 리딩 탭으로 돌아가며 같은 초기화를 적용합니다.
+   * role(admin/user)은 resetAll에 포함되지 않으므로 로그인 상태는 유지됩니다.
    */
   const handleHome = useCallback(() => {
     if (step !== 1) {
@@ -177,8 +187,27 @@ export default function HomePage() {
     setTab('reading')
   }, [step, resetAll])
 
+  if (role === null) {
+    return <PasswordGate onSuccess={setRole} />
+  }
+
   return (
-    <SiteChrome activeTab={tab} onTabChange={setTab} onHome={handleHome}>
+    <SiteChrome
+      activeTab={tab}
+      onTabChange={setTab}
+      onHome={handleHome}
+      footerAddon={
+        role === 'admin' ? (
+          <button
+            type="button"
+            onClick={() => setAdminPanelOpen(true)}
+            className="rounded-full border border-[#e0e0e5] bg-white/80 px-4 py-2 text-xs font-medium text-[#4a6fa5] shadow-sm transition-colors hover:bg-[#eef1f8]"
+          >
+            ⚙ 관리
+          </button>
+        ) : undefined
+      }
+    >
       {tab === 'guestbook' ? (
         <div className="rounded-2xl border border-[#e0e0e5] bg-white/60 p-12 text-center text-[#6e6e73] backdrop-blur-sm">
           <p className="mb-2 font-medium text-[#2c2c2e]">방명록</p>
@@ -280,6 +309,7 @@ export default function HomePage() {
           )}
         </>
       )}
+      <AdminPanel open={adminPanelOpen} onClose={() => setAdminPanelOpen(false)} />
     </SiteChrome>
   )
 }

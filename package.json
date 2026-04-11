@@ -7,10 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "npx ts-node --project tsconfig.seed.json scripts/seed-cards.ts"
+    "seed": "npx ts-node --project tsconfig.seed.json scripts/seed-cards.ts",
+    "migrate:auth": "npx ts-node --project tsconfig.seed.json scripts/migrate-auth.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.3",
+    "lucide-react": "^1.8.0",
     "next": "14.2.29",
     "pg": "^8.13.3",
     "react": "^18",
