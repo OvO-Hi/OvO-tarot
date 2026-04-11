@@ -22,27 +22,29 @@
 
 ## 디자인 시스템
 
-### 색상 팔레트
+### 색상 팔레트 (OvO 소프트 모노)
 ```
-배경:       #fdf0f0  (연핑크)
-카드 배경:  #fce8e8
-포인트:     #c8748a  (로즈)
-포인트2:    #d4956a  (골드)
-텍스트:     #6b4c52  (다크 로즈)
-서브텍스트: #a07880  (미디엄 로즈)
-경계선:     #f0d0d5
-흰배경:     #fffafa
+배경:         #f5f5f7  (연회색)
+카드 배경:    #ffffff  (흰색)
+포인트:       #4a6fa5  (슬레이트 블루)
+포인트2:      #6b7fa3  (미디엄 블루그레이)
+텍스트:       #2c2c2e  (차콜)
+서브텍스트:   #6e6e73  (미디엄 그레이)
+경계선:       #e0e0e5  (라이트 그레이)
+흰배경:       #ffffff
+핵심조언박스: #eef1f8  (연블루그레이)
 ```
 
 ### 폰트
 - 한국어 본문: `Noto Serif KR` (Google Fonts)
-- 타이틀(LARI TAROT): letter-spacing 0.3em, font-weight 300
+- 타이틀(OvO TAROT): letter-spacing 0.3em, font-weight 300
 - 숫자/기호: `serif` 계열
 
 ### 컴포넌트 스타일 패턴
-- 카드: `rounded-2xl`, 부드러운 그림자 `shadow-[0_4px_20px_rgba(200,116,138,0.15)]`
-- 버튼: 그라데이션 `from-[#c8748a] to-[#d4956a]`, `rounded-full`
-- 섹션 헤더: `✦ 제목 ✦` 형태, 작은 꽃 장식
+- 카드: `rounded-2xl`, 그림자 `shadow-[0_4px_20px_rgba(74,111,165,0.12)]` 부근
+- 버튼·활성 탭: 그라데이션 `from-[#4a6fa5] to-[#6b7fa3]`, `rounded-full`
+- 비활성 탭·톤 칩: 흰 배경 + 텍스트 `#6e6e73`
+- 섹션 헤더: `✦ 제목 ✦` 형태 (✦ 기호 유지)
 - 박스: 반투명 `bg-white/60 backdrop-blur-sm`
 
 ### 카드 심볼 표현 (이미지 없음)
@@ -57,7 +59,7 @@
 │  (역방향)   │  ← isReversed면 표시
 └─────────────┘
 ```
-카드 뒷면: 연핑크 배경 + 중앙에 꽃 아이콘(🌸 또는 SVG)
+카드 뒷면: 흰 배경 `#ffffff`, 테두리 `#e0e0e5`, 중앙 텍스트 `OvO TAROT` 색 `#4a6fa5`
 
 ### 역방향 표현
 - 카드 전체 `rotate-180` 클래스 적용
@@ -66,7 +68,7 @@
 ## 화면 흐름 (step 기반)
 ```
 step 1: 톤 선택 + 상황 입력
-step 2: 로딩 (수정구슬 + "상황을 분석하고 있어요..." + "맞춤 스프레드를 설계하는 중 (최대 30초)")
+step 2: 로딩 (◎ + "상황을 분석하고 있어요..." + "맞춤 스프레드를 설계하는 중 (최대 30초)")
 step 3: 상황 분석 결과 표시 (situationSummary, questions, spread 소개)
 step 4: 카드 배치 (뒷면) + "카드 뽑기" 버튼
 step 5: 카드 공개 로딩 ("리딩하고 있어요...")
@@ -76,7 +78,7 @@ step 6: 전체 해석 결과
 ## 컴포넌트 목록
 
 ### `components/ToneSelector.tsx`
-- 5개 톤 선택 버튼: 아주 부드럽게🌸 / 부드럽게🌿 / 표준🌙 / 직설적으로⚡ / 아주 직설적으로🔥
+- 5개 톤 선택 버튼: 아주 부드럽게◈ / 부드럽게⊕ / 표준△ / 직설적으로⊗ / 아주 직설적으로✕
 - 선택된 버튼만 강조 (border + bg 변경)
 - props: `{ value: string, onChange: (tone: string) => void }`
 
@@ -97,7 +99,7 @@ step 6: 전체 해석 결과
 ### `components/CardSpread.tsx`
 - 카드 수에 따라 레이아웃 자동 조정:
   - 3장: 가로 나열
-  - 5장: 2-2-1 또는 라리타로처럼 위2 아래2 중앙1
+  - 5장: 2-2-1 (위2 · 아래2 · 중앙1)
   - 7장: 3-4 또는 십자형
 - 카드 하나씩 순서대로 공개 (클릭하면 flip 애니메이션)
 - 뒷면→앞면 CSS flip: `transition-transform duration-700 [transform-style:preserve-3d]`
@@ -105,14 +107,14 @@ step 6: 전체 해석 결과
 - props: `{ spread: Spread, drawnCards: DrawnCard[], revealedCount: number, onRevealNext: () => void }`
 
 ### `components/ReadingResult.tsx`
-- 상단: "✦ LARI TAROT ✦" + "✦ Sonnet이 리딩했습니다 ✦"
+- 상단: "✦ OvO TAROT ✦" + "✦ Sonnet이 리딩했습니다 ✦"
 - 질문 박스 (회색 border 박스)
 - 카드 미니어처 가로 나열 (5장이면 5개)
 - 해석 텍스트 (마크다운 파싱 — `react-markdown` 사용)
   - `##` → 섹션 헤더
-  - `>` 블록쿼트 → 핵심 조언 박스 (특별 스타일)
+  - `>` 블록쿼트 → 핵심 조언 박스 (배경 `#eef1f8`)
   - `*italic*` → 추가 질문 제안
-- "리딩 저장하기 💾" 버튼: html2canvas로 `#reading-capture` 캡처 → PNG
+- "리딩 저장하기 ▽" 버튼: `#reading-capture` 복제 → 독립 HTML 새 탭 (`reading-standalone-html.ts`)
 - 추가 질문 입력창 + 전송 버튼
 - 저장 영역에 `id="reading-capture"` 지정
 - props: `{ situation: string, spread: Spread, drawnCards: DrawnCard[], reading: string, onFollowup: (q: string) => void }`
@@ -159,27 +161,12 @@ interface AnalysisResult {
 }
 ```
 
-## 저장 기능 (html2canvas)
-```typescript
-import html2canvas from 'html2canvas'
-
-const handleSave = async () => {
-  const el = document.getElementById('reading-capture')
-  if (!el) return
-  const canvas = await html2canvas(el, {
-    backgroundColor: '#fdf0f0',
-    scale: 2,  // 고해상도
-    useCORS: true,
-  })
-  const link = document.createElement('a')
-  link.download = `lari-tarot-reading-${Date.now()}.png`
-  link.href = canvas.toDataURL()
-  link.click()
-}
-```
+## 저장 기능 (독립 HTML)
+- `buildStandaloneReadingHtml` + Blob URL 새 탭 → 인쇄/PDF/ HTML 다른 이름으로 저장
+- 문서 `<title>`: `OvO TAROT — 리딩 (타임스탬프)`
 
 ## 애니메이션 가이드
 - 페이지 전환: `opacity-0 → opacity-100 transition-opacity duration-500`
 - 카드 등장: `scale-95 opacity-0 → scale-100 opacity-100 transition-all duration-300`
 - 카드 플립: CSS 3D transform (위 CardSpread 참고)
-- 로딩 수정구슬: `animate-pulse` 또는 float 애니메이션
+- 로딩 기호 ◎: `animate-pulse` 또는 float 애니메이션

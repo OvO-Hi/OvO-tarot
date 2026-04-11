@@ -15,14 +15,15 @@ const notoSerif = Noto_Serif_KR({
 })
 
 export const metadata: Metadata = {
-  title: 'LARI TAROT',
+  /** 브라우저 탭·검색 미리보기에 표시되는 사이트 제목 (LARI → OvO 리브랜딩) */
+  title: 'OvO TAROT',
   description: '당신만을 위한 맞춤 타로 리딩',
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ko" className={notoSerif.variable}>
-      <body className="min-h-screen bg-[#fdf0f0] font-serif text-[#6b4c52] antialiased">
+      <body className="min-h-screen bg-[#f5f5f7] font-serif text-[#2c2c2e] antialiased">
         {children}
       </body>
     </html>

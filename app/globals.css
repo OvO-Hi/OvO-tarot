@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * OvO TAROT — 소프트 모노 테마 토큰 (CSS 변수)
+ * - 브라우저 개발자 도구에서 한눈에 팔레트를 확인할 수 있게 했습니다.
+ * - 필요 시 컴포넌트에서 `var(--ovo-point)` 형태로도 쓸 수 있습니다.
+ */
+:root {
+  --ovo-bg: #f5f5f7;
+  --ovo-card: #ffffff;
+  --ovo-point: #4a6fa5;
+  --ovo-point2: #6b7fa3;
+  --ovo-text: #2c2c2e;
+  --ovo-muted: #6e6e73;
+  --ovo-border: #e0e0e5;
+  --ovo-surface: #ffffff;
+  --ovo-advice: #eef1f8;
+}
+
 /* 스크롤이 부드럽게 보이도록 (선택 사항) */
 html {
   scroll-behavior: smooth;

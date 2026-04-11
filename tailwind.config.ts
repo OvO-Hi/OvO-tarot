@@ -10,16 +10,22 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      /**
+       * OvO TAROT 소프트 모노 팔레트 (Tailwind에서 `bg-ovo-bg`처럘 참조 가능).
+       * 화면 대부분은 여전히 임의 값(hex) 클래스를 쓰지만, 여기 두면 재사용·문서화에 좋습니다.
+       */
       colors: {
-        lari: {
-          bg: '#fdf0f0',
-          card: '#fce8e8',
-          rose: '#c8748a',
-          gold: '#d4956a',
-          text: '#6b4c52',
-          muted: '#a07880',
-          border: '#f0d0d5',
-          surface: '#fffafa',
+        ovo: {
+          bg: '#f5f5f7',
+          card: '#ffffff',
+          point: '#4a6fa5',
+          point2: '#6b7fa3',
+          text: '#2c2c2e',
+          muted: '#6e6e73',
+          border: '#e0e0e5',
+          surface: '#ffffff',
+          /** 마크다운 핵심 조언(blockquote) 배경 */
+          advice: '#eef1f8',
         },
       },
       fontFamily: {

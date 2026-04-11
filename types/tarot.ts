@@ -1,11 +1,12 @@
 export type Tone = 'very-gentle' | 'gentle' | 'normal' | 'direct' | 'very-direct'
 
+/** 톤 칩에 붙는 기호는 핑크 테마 이모지 대신 소프트 모노 기하 기호로 통일했습니다. */
 export const TONE_LABELS: Record<Tone, string> = {
-  'very-gentle': '아주 부드럽게 🌸',
-  'gentle': '부드럽게 🌿',
-  'normal': '표준 🌙',
-  'direct': '직설적으로 ⚡',
-  'very-direct': '아주 직설적으로 🔥',
+  'very-gentle': '아주 부드럽게 ◈',
+  'gentle': '부드럽게 ⊕',
+  'normal': '표준 △',
+  'direct': '직설적으로 ⊗',
+  'very-direct': '아주 직설적으로 ✕',
 }
 
 export const TONE_DESCRIPTIONS: Record<Tone, string> = {

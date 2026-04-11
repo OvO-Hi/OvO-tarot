@@ -30,8 +30,21 @@ export default function HomePage() {
   const [reading, setReading] = useState('')
   const [revealedCount, setRevealedCount] = useState(0)
 
-  const [followups, setFollowups] = useState<{ question: string; answer: string }[]>([])
+  /**
+   * followup 히스토리:
+   * - question/answer에 더해 drawnCards(1~3장)를 저장합니다.
+   * - 이 데이터는 FollowupSection에서 "뒷면 → 순차 플립 → 답변 노출" 흐름을 그리는 데 사용됩니다.
+   */
+  const [followups, setFollowups] = useState<
+    { question: string; answer: string; drawnCards?: DrawnCard[] }[]
+  >([])
   const [followupLoading, setFollowupLoading] = useState(false)
+  /**
+   * 추가 질문 입력창의 단일 진실 공급원(state)을 page로 올렸습니다.
+   * 이유: ReadingResult의 제안 질문 버튼이 입력값을 채울 때도 동일 state를 갱신해야
+   * 수동 입력/자동 채우기/전송 흐름이 서로 충돌하지 않습니다.
+   */
+  const [followupInput, setFollowupInput] = useState('')
 
   const [error, setError] = useState<string | null>(null)
 
@@ -96,7 +109,10 @@ export default function HomePage() {
     setRevealedCount((c) => c + 1)
   }, [])
 
-  /** 추가 질문 API — 답변을 followups에 쌓습니다 */
+  /**
+   * 추가 질문 API — { answer, drawnCards } 응답을 받아 followups에 누적합니다.
+   * drawnCards가 없거나 형식이 달라도 UI가 깨지지 않도록 배열 여부를 방어적으로 확인합니다.
+   */
   const handleFollowup = useCallback(
     async (q: string) => {
       setFollowupLoading(true)
@@ -114,7 +130,15 @@ export default function HomePage() {
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error || '답변에 실패했습니다.')
-        setFollowups((prev) => [...prev, { question: q, answer: data.answer as string }])
+        const nextDrawnCards = Array.isArray(data.drawnCards) ? (data.drawnCards as DrawnCard[]) : []
+        setFollowups((prev) => [
+          ...prev,
+          {
+            question: q,
+            answer: (data.answer as string) ?? '',
+            drawnCards: nextDrawnCards,
+          },
+        ])
       } catch (e) {
         setError(e instanceof Error ? e.message : '답변에 실패했습니다.')
       } finally {
@@ -133,11 +157,12 @@ export default function HomePage() {
     setReading('')
     setRevealedCount(0)
     setFollowups([])
+    setFollowupInput('')
     setError(null)
   }, [])
 
   /**
-   * 상단 로고(꽃 + LARI TAROT) 클릭 시: 리딩 진행 중이면 확인 후 전체 초기화·step 1.
+   * 상단 로고(✦ + OvO TAROT) 클릭 시: 리딩 진행 중이면 확인 후 전체 초기화·step 1.
    * step 1이면 확인 없이 바로 초기화(이미 처음이므로 부작용 거의 없음).
    * 방명록 탭이어도 리딩 탭으로 돌아가며 같은 초기화를 적용합니다.
    */
@@ -155,8 +180,8 @@ export default function HomePage() {
   return (
     <SiteChrome activeTab={tab} onTabChange={setTab} onHome={handleHome}>
       {tab === 'guestbook' ? (
-        <div className="rounded-2xl border border-[#f0d0d5] bg-white/60 p-12 text-center text-[#a07880] backdrop-blur-sm">
-          <p className="mb-2 font-medium text-[#6b4c52]">방명록</p>
+        <div className="rounded-2xl border border-[#e0e0e5] bg-white/60 p-12 text-center text-[#6e6e73] backdrop-blur-sm">
+          <p className="mb-2 font-medium text-[#2c2c2e]">방명록</p>
           <p className="text-sm">곧 열릴 예정이에요. 지금은 타로 리딩 탭을 이용해 주세요 ✦</p>
         </div>
       ) : (
@@ -174,7 +199,7 @@ export default function HomePage() {
             {step === 1 && <SituationForm onSubmit={handleSituationSubmit} />}
 
             {step === 2 && (
-              <div className="rounded-2xl border border-[#f0d0d5] bg-white/60 px-4 backdrop-blur-sm sm:px-8">
+              <div className="rounded-2xl border border-[#e0e0e5] bg-white/60 px-4 backdrop-blur-sm sm:px-8">
                 <StepLoading
                   title="상황을 분석하고 있어요..."
                   subtitle="맞춤 스프레드를 설계하는 중 (최대 30초)"
@@ -207,7 +232,7 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={() => setStep(6)}
-                    className="rounded-full bg-gradient-to-r from-[#c8748a] to-[#d4956a] px-10 py-3 text-sm font-medium text-white shadow-[0_4px_20px_rgba(200,116,138,0.25)] transition-transform duration-300 hover:scale-[1.02]"
+                    className="rounded-full bg-gradient-to-r from-[#4a6fa5] to-[#6b7fa3] px-10 py-3 text-sm font-medium text-white shadow-[0_4px_20px_rgba(74,111,165,0.22)] transition-transform duration-300 hover:scale-[1.02]"
                   >
                     리딩 결과 보기 ✦
                   </button>
@@ -216,7 +241,7 @@ export default function HomePage() {
             )}
 
             {step === 5 && analysis && (
-              <div className="rounded-2xl border border-[#f0d0d5] bg-white/60 px-4 backdrop-blur-sm sm:px-8">
+              <div className="rounded-2xl border border-[#e0e0e5] bg-white/60 px-4 backdrop-blur-sm sm:px-8">
                 <StepLoading
                   title="카드를 뽑고 있어요..."
                   subtitle="카드 배치를 준비하고 리딩을 작성하는 중이에요"
@@ -233,6 +258,9 @@ export default function HomePage() {
                 revealedCount={revealedCount}
                 reading={reading}
                 onFollowup={handleFollowup}
+                followupInput={followupInput}
+                onFollowupInputChange={setFollowupInput}
+                onSuggestQuestion={setFollowupInput}
                 followups={followups}
                 followupLoading={followupLoading}
               />
@@ -244,7 +272,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={resetAll}
-                className="text-xs text-[#a07880] underline decoration-[#f0d0d5] underline-offset-4 hover:text-[#6b4c52]"
+                className="text-xs text-[#6e6e73] underline decoration-[#e0e0e5] underline-offset-4 hover:text-[#2c2c2e]"
               >
                 처음부터 다시하기
               </button>

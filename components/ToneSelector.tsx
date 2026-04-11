@@ -15,6 +15,8 @@ export interface ToneSelectorProps {
 /**
  * 리딩 말투 5단계 선택 UI입니다.
  * 선택된 칩만 테두리·배경이 강조되도록 해 사용자가 “지금 어떤 모드인지” 한눈에 알 수 있게 했습니다.
+ *
+ * [테마] 탭과 동일하게 — 선택: 포인트 컬러 테두리 + 연블루그레이 배경, 미선택: 흰 배경 + muted 텍스트.
  */
 export default function ToneSelector({ value, onChange }: ToneSelectorProps) {
   return (
@@ -29,8 +31,8 @@ export default function ToneSelector({ value, onChange }: ToneSelectorProps) {
             className={[
               'rounded-full border px-3 py-2 text-sm transition-all duration-300 sm:px-4',
               selected
-                ? 'border-[#c8748a] bg-[#fce8e8] text-[#6b4c52] shadow-[0_4px_20px_rgba(200,116,138,0.15)]'
-                : 'border-[#f0d0d5] bg-white/60 text-[#a07880] backdrop-blur-sm hover:border-[#c8748a]/50',
+                ? 'border-[#4a6fa5] bg-[#eef1f8] text-[#2c2c2e] shadow-[0_4px_20px_rgba(74,111,165,0.12)]'
+                : 'border-[#e0e0e5] bg-white text-[#6e6e73] backdrop-blur-sm hover:border-[#4a6fa5]/40',
             ].join(' ')}
           >
             {TONE_LABELS[tone]}

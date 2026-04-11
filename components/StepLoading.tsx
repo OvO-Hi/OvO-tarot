@@ -10,8 +10,9 @@ export interface StepLoadingProps {
 }
 
 /**
- * 2·5단계 공통 로딩 UI (수정구슬 + 펄스).
+ * 2·5단계 공통 로딩 UI (◎ + 펄스).
  * 같은 모양을 재사용해 “지금 AI가 일하는 중”이라는 인식을 통일했습니다.
+ * 이모지 수정구슬(🔮)은 요청에 따라 기하 기호 ◎ 로 바꿨습니다.
  */
 export default function StepLoading({ title, subtitle, label }: StepLoadingProps) {
   return (
@@ -21,11 +22,11 @@ export default function StepLoading({ title, subtitle, label }: StepLoadingProps
       aria-live="polite"
       aria-label={label}
     >
-      <div className="mb-6 animate-pulse text-5xl drop-shadow-sm" aria-hidden>
-        🔮
+      <div className="mb-6 animate-pulse text-5xl text-[#4a6fa5] drop-shadow-sm" aria-hidden>
+        ◎
       </div>
-      <p className="mb-2 text-lg font-medium text-[#6b4c52]">{title}</p>
-      <p className="max-w-sm text-sm text-[#a07880]">{subtitle}</p>
+      <p className="mb-2 text-lg font-medium text-[#2c2c2e]">{title}</p>
+      <p className="max-w-sm text-sm text-[#6e6e73]">{subtitle}</p>
     </div>
   )
 }

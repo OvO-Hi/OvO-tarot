@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import type { DrawnCard, Spread } from '@/types/tarot'
 
 export interface CardSpreadProps {
@@ -26,13 +27,14 @@ function parseSymbol(symbol: string) {
   return { rank: '', glyph: symbol.trim() }
 }
 
+/**
+ * 카드 뒷면: 흰 배경 + 회색 테두리, 중앙에 브랜드명만 포인트 컬러로 표시.
+ * (이전 연핑크·꽃 이모지 디자인을 요청대로 단정한 모노 톤으로 교체했습니다.)
+ */
 function CardBack() {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center rounded-2xl border border-[#f0d0d5] bg-[#fce8e8] shadow-inner">
-      <span className="text-3xl" aria-hidden>
-        🌸
-      </span>
-      <span className="mt-2 font-serif text-[10px] tracking-[0.2em] text-[#a07880]">LARI TAROT</span>
+    <div className="flex h-full w-full flex-col items-center justify-center rounded-2xl border border-[#e0e0e5] bg-[#ffffff] shadow-inner">
+      <span className="font-serif text-[10px] font-medium tracking-[0.25em] text-[#4a6fa5]">OvO TAROT</span>
     </div>
   )
 }
@@ -48,14 +50,14 @@ function TarotFace({
   return (
     <div
       className={[
-        'flex h-full w-full flex-col items-center justify-center rounded-2xl border border-[#f0d0d5] bg-[#fffafa] px-2 py-3 text-center shadow-[0_4px_20px_rgba(200,116,138,0.12)]',
+        'flex h-full w-full flex-col items-center justify-center rounded-2xl border border-[#e0e0e5] bg-[#ffffff] px-2 py-3 text-center shadow-[0_4px_20px_rgba(74,111,165,0.1)]',
         isReversed ? 'rotate-180' : '',
       ].join(' ')}
     >
-      <span className="font-serif text-xs text-[#a07880]">{rank}</span>
-      <span className="my-2 font-serif text-3xl text-[#c8748a]">{glyph || '✦'}</span>
-      <span className="text-xs font-medium text-[#6b4c52]">{card.name_ko}</span>
-      {isReversed && <span className="mt-1 text-[10px] text-[#a07880]">(역방향)</span>}
+      <span className="font-serif text-xs text-[#6e6e73]">{rank}</span>
+      <span className="my-2 font-serif text-3xl text-[#4a6fa5]">{glyph || '✦'}</span>
+      <span className="text-xs font-medium text-[#2c2c2e]">{card.name_ko}</span>
+      {isReversed && <span className="mt-1 text-[10px] text-[#6e6e73]">(역방향)</span>}
     </div>
   )
 }
@@ -78,7 +80,11 @@ function PositionSlot({ meaning, children, onClick, clickable, revealed }: SlotP
     'relative h-44 w-[7.25rem] sm:h-52 sm:w-[8.25rem] [perspective:1000px]'
   return (
     <div className="flex flex-col items-center gap-2">
-      <p className="max-w-[10rem] text-center text-[10px] leading-snug text-[#a07880] sm:max-w-[11rem] sm:text-xs">
+      {/**
+       * 포지션 텍스트 길이(1줄/2줄)와 관계없이 카드의 y축 위치가 흔들리지 않도록
+       * 텍스트 영역 높이를 고정(h-[40px])하고, 텍스트는 상단 정렬(items-start)합니다.
+       */}
+      <p className="flex h-[40px] max-w-[10rem] items-start justify-center whitespace-normal break-keep break-words text-center text-[10px] leading-snug text-[#6e6e73] sm:max-w-[11rem] sm:text-xs">
         {meaning}
       </p>
       <button
@@ -90,7 +96,7 @@ function PositionSlot({ meaning, children, onClick, clickable, revealed }: SlotP
           shellClass,
           'rounded-2xl text-left transition-opacity focus:outline-none',
           clickable && !revealed
-            ? 'cursor-pointer hover:opacity-95 focus:ring-2 focus:ring-[#c8748a]/40'
+            ? 'cursor-pointer hover:opacity-95 focus:ring-2 focus:ring-[#4a6fa5]/40'
             : 'cursor-default',
         ].join(' ')}
       >
@@ -153,7 +159,7 @@ function FlipWrapper({
 /**
  * 카드 수에 따라 레이아웃을 바꿉니다.
  * - 3장: 한 줄
- * - 5장: 라리타로 스타일 2-2-1
+ * - 5장: 2-2-1 (피라미드형 배치)
  * - 7장: 위 3 · 아래 4
  */
 function SpreadGrid({
@@ -216,18 +222,41 @@ export default function CardSpread({
 }: CardSpreadProps) {
   const positions = [...spread.positions].sort((a, b) => a.position - b.position)
   const n = positions.length
+  /**
+   * 카드 공개 상태를 "인덱스별"로 관리합니다.
+   * 기존 revealedCount 기반(index < revealedCount) 방식은 순서 강제에 유리하지만,
+   * 이번 요구사항(아무 카드나 먼저 뒤집기)에는 맞지 않아서 boolean 배열로 전환했습니다.
+   */
+  const [revealedByIndex, setRevealedByIndex] = useState<boolean[]>([])
+
+  useEffect(() => {
+    /**
+     * 스프레드/카드가 바뀌면 공개 상태를 전부 false로 초기화합니다.
+     * 중요: 순서 강제 표현(idx < revealedCount)을 완전히 제거해
+     * "어떤 카드든 먼저 클릭 가능" 규칙을 코드 레벨에서 확실히 보장합니다.
+     */
+    setRevealedByIndex(drawnCards.map(() => false))
+  }, [drawnCards])
 
   const slots = positions.map((pos, index) => {
     const drawn = drawnCards[index]
-    const revealed = !!drawn && index < revealedCount
-    const canClick =
-      !!drawn &&
-      index === revealedCount &&
-      revealedCount < drawnCards.length &&
-      !drawLoading
+    const revealed = !!drawn && !!revealedByIndex[index]
+    /**
+     * 순서 제한 제거:
+     * - index === revealedCount 조건을 제거해 어떤 카드든 즉시 클릭 가능
+     * - 이미 공개된 카드(revealed)는 비활성 처리
+     */
+    const canClick = !!drawn && !revealed && !drawLoading
 
     const handleClick = () => {
-      if (canClick) onRevealNext()
+      if (!canClick) return
+      setRevealedByIndex((prev) => {
+        const next = [...prev]
+        next[index] = true
+        return next
+      })
+      /** 부모의 공개 개수 카운트(revealedCount)도 같이 증가시켜 상단 미니 카드 표시와 동기화합니다. */
+      onRevealNext()
     }
 
     return (
@@ -242,7 +271,7 @@ export default function CardSpread({
           revealed={revealed}
           front={
             <div className="relative h-full w-full">
-              <span className="absolute left-2 top-2 z-20 rounded-md bg-[#fffafa]/90 px-1.5 py-0.5 text-[10px] font-medium text-[#a07880]">
+              <span className="absolute left-2 top-2 z-20 rounded-md bg-[#ffffff]/90 px-1.5 py-0.5 text-[10px] font-medium text-[#6e6e73]">
                 {pos.position}
               </span>
               <TarotFace card={drawn.card} isReversed={drawn.isReversed} />
@@ -254,16 +283,17 @@ export default function CardSpread({
   })
 
   return (
-    <div className="rounded-2xl border border-[#f0d0d5] bg-white/60 p-6 shadow-[0_4px_20px_rgba(200,116,138,0.15)] backdrop-blur-sm sm:p-10">
-      <h2 className="mb-2 text-center font-medium text-[#6b4c52]">
-        <span className="text-[#c8748a]">✦</span> {spread.name} <span className="text-[#c8748a]">✦</span>
+    <div className="rounded-2xl border border-[#e0e0e5] bg-white/60 p-6 shadow-[0_4px_20px_rgba(74,111,165,0.12)] backdrop-blur-sm sm:p-10">
+      <h2 className="mb-2 text-center font-medium text-[#2c2c2e]">
+        <span className="text-[#4a6fa5]">✦</span> {spread.name} <span className="text-[#4a6fa5]">✦</span>
       </h2>
-      <p className="mb-10 text-center text-xs text-[#a07880]">카드를 하나씩 탭해서 뒤집어보세요</p>
+      <p className="mb-10 text-center text-xs text-[#6e6e73]">카드를 하나씩 탭해서 뒤집어보세요</p>
 
       <SpreadGrid count={n}>{slots}</SpreadGrid>
       {revealedCount < drawnCards.length && (
-        <p className="mt-8 text-center text-xs text-[#a07880]">
-          <span className="text-[#c8748a]">🌸</span> 다음 카드를 탭해 주세요 ({revealedCount}/{drawnCards.length})
+        <p className="mt-8 text-center text-xs text-[#6e6e73]">
+          {/** 안내 줄 장식: 🌸 → ◈ (톤 선택 기호와 통일) */}
+          <span className="text-[#4a6fa5]">◈</span> 다음 카드를 탭해 주세요 ({revealedCount}/{drawnCards.length})
         </p>
       )}
     </div>
