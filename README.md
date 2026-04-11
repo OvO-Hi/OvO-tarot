@@ -109,9 +109,3 @@ Vercel 대시보드 또는 CLI에서 `ANTHROPIC_API_KEY`, `DATABASE_URL` 등 환
 | `POST /api/auth/verify` | 접근 비밀번호 검증 (관리자/사용자) |
 | `POST /api/auth/update` | 관리자 비밀번호 변경·일반 사용자 임시 비밀번호 발급 |
 | `GET /api/auth/current-user-password` | 현재 유효한 일반 사용자 비밀번호 조회 (관리 UI용) |
-
----
-
-## 라이선스 및 크레딧
-
-프로젝트 정책에 맞게 저장소 루트의 라이선스 파일을 확인하세요.
