@@ -5,11 +5,14 @@
     "lib": ["es2017"],
     "strict": true,
     "esModuleInterop": true,
+    "skipLibCheck": true,
     "outDir": "./dist",
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     }
   },
-  "include": ["scripts/**/*", "lib/**/*", "types/**/*"]
+  "include": ["scripts/**/*", "lib/**/*", "types/**/*"],
+  "//exclude": "lib/cv-viewer.ts 는 next/server 에 의존하므로 scripts 빌드 컨텍스트에서 제외 — scripts 는 직접 pg Pool 만 사용",
+  "exclude": ["lib/cv-viewer.ts"]
 }
