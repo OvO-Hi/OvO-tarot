@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { drawRandomCards, assignReversals } from '@/lib/tarot-data'
 import { buildReadingPrompt } from '@/lib/prompt-builder'
+import { CLAUDE_MODEL } from '@/lib/config'
 import type { Spread, Tone, Category, DrawnCard } from '@/types/tarot'
+import {
+  getActiveCvViewerSession,
+  getCvViewerUsage,
+  incrementCvViewerUsage,
+} from '@/lib/cv-viewer'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -13,6 +19,40 @@ export async function POST(req: NextRequest) {
       tone: Tone
       spread: Spread
       detectedCategories: Category[]
+    }
+
+    // 0. CV viewer 세션이면 사용 횟수 차감 (관리자/일회용 사용자는 차감 없음)
+    const cvSession = await getActiveCvViewerSession(req)
+    let cvUsageAfter: { used: number; limit: number; remaining: number } | null = null
+    if (cvSession) {
+      // 차감 전에 한도 미리 확인 — race 가 있어도 INSERT 단계에서 한 번 더 거른다.
+      const before = await getCvViewerUsage(cvSession.viewerId)
+      if (before.remaining <= 0) {
+        return NextResponse.json(
+          {
+            error: 'cv_limit_exceeded',
+            message: '이 비밀번호로는 리딩 횟수를 모두 사용했습니다.',
+            usage: before,
+          },
+          { status: 403 }
+        )
+      }
+      const inc = await incrementCvViewerUsage(cvSession.viewerId)
+      if (!inc.ok) {
+        return NextResponse.json(
+          {
+            error: 'cv_limit_exceeded',
+            message: '이 비밀번호로는 리딩 횟수를 모두 사용했습니다.',
+            usage: inc.usage,
+          },
+          { status: 403 }
+        )
+      }
+      cvUsageAfter = {
+        used: inc.usage.used,
+        limit: inc.usage.limit,
+        remaining: inc.usage.remaining,
+      }
     }
 
     // 1. DB에서 랜덤 카드 뽑기
@@ -37,7 +77,7 @@ export async function POST(req: NextRequest) {
 
     // 4. Claude API 호출
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: CLAUDE_MODEL,
       max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }],
     })
@@ -47,7 +87,11 @@ export async function POST(req: NextRequest) {
       .map((b) => b.text)
       .join('')
 
-    return NextResponse.json({ reading, drawnCards })
+    return NextResponse.json({
+      reading,
+      drawnCards,
+      ...(cvUsageAfter ? { cvUsage: cvUsageAfter } : {}),
+    })
   } catch (error) {
     console.error('[/api/reading] error:', error)
     return NextResponse.json({ error: '리딩 중 오류가 발생했습니다.' }, { status: 500 })

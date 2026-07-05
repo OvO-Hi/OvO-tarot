@@ -4,7 +4,24 @@
       "Bash(npm install:*)",
       "Bash(npm run:*)",
       "Bash(curl -s http://localhost:3000 -o /dev/null -w \"%{http_code}\")",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(xattr -l /Users/user/Documents/GitHub/OvO-tarot/components/AdminPanel.tsx)",
+      "Bash(mdls -name kMDItemFSSize /Users/user/Documents/GitHub/OvO-tarot/components/AdminPanel.tsx)",
+      "Bash(brctl download *)",
+      "Bash(dd if=/Users/user/Documents/GitHub/OvO-tarot/components/AdminPanel.tsx of=/dev/null bs=1 count=100)",
+      "Bash(cp /Users/user/Documents/GitHub/OvO-tarot/components/AdminPanel.tsx /tmp/AdminPanel.tsx)",
+      "Read(//tmp/**)",
+      "Bash(mount)",
+      "Bash(fileproviderctl dump *)",
+      "Bash(awk *)",
+      "Bash(xattr -l /Users/user/Documents/GitHub/OvO-tarot)",
+      "Bash(python3 *)",
+      "Bash(xxd)",
+      "Bash(git -C /Users/user/Documents/GitHub/OvO-tarot status)",
+      "Bash(git -C /Users/user/Documents/GitHub/OvO-tarot log --oneline -10)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(kill 64713 64716 66164 66166)",
+      "Bash(npx tsc *)"
     ]
   }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { buildAnalyzePrompt } from '@/lib/prompt-builder'
+import { CLAUDE_MODEL } from '@/lib/config'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
     const prompt = buildAnalyzePrompt(situation)
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: CLAUDE_MODEL,
       max_tokens: 1024,
       messages: [{ role: 'user', content: prompt }],
     })
