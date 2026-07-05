@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { drawRandomCards, assignReversals } from '@/lib/tarot-data'
 import { buildReadingPrompt } from '@/lib/prompt-builder'
+import { CLAUDE_MODEL } from '@/lib/config'
 import type { Spread, Tone, Category, DrawnCard } from '@/types/tarot'
 import {
   getActiveCvViewerSession,
