@@ -3,9 +3,23 @@
 import { Eye, EyeOff } from 'lucide-react'
 import { useCallback, useState } from 'react'
 
+/** 메인 페이지에서 사용하는 사용자 역할.  cv_viewer 는 CV 공개용 비밀번호로 들어온 외부 채용 검토자. */
+export type AuthRole = 'admin' | 'user' | 'cv_viewer'
+
+export type CvViewerUsage = {
+  used: number
+  limit: number
+  remaining: number
+}
+
+export type AuthSuccessPayload =
+  | { role: 'admin' }
+  | { role: 'user' }
+  | { role: 'cv_viewer'; usage: CvViewerUsage; expiresAt: number }
+
 export interface PasswordGateProps {
-  /** 검증 성공 시 부모(page)가 role을 설정해 메인 화면으로 넘깁니다 */
-  onSuccess: (role: 'admin' | 'user') => void
+  /** 검증 성공 시 부모(page)가 role + (cv_viewer면 usage/expiresAt) 를 받아 메인 화면으로 넘깁니다 */
+  onSuccess: (payload: AuthSuccessPayload) => void
 }
 
 /**
@@ -35,12 +49,18 @@ export default function PasswordGate({ onSuccess }: PasswordGateProps) {
         body: JSON.stringify({ password: trimmed }),
       })
       const data = (await res.json()) as {
-        role?: 'admin' | 'user' | null
+        role?: AuthRole | null
         error?: string
+        usage?: CvViewerUsage
+        expiresAt?: number
       }
       /** verify API는 실패 시에도 200으로 role:null + error를 줄 수 있어(만료 등) 본문을 우선 확인합니다 */
       if (data.role === 'admin' || data.role === 'user') {
-        onSuccess(data.role)
+        onSuccess({ role: data.role })
+        return
+      }
+      if (data.role === 'cv_viewer' && data.usage && typeof data.expiresAt === 'number') {
+        onSuccess({ role: 'cv_viewer', usage: data.usage, expiresAt: data.expiresAt })
         return
       }
       setError(data.error ?? '입장에 실패했습니다.')

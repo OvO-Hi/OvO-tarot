@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { query } from '@/lib/db'
+import { lookupHash } from '@/lib/cv-crypto'
 import {
   attachCvAuthCookie,
   attachCvViewerCookie,
@@ -20,23 +21,15 @@ export async function POST(req: NextRequest) {
 
     const rows = await query<{ key: string; value: string }>(
       `SELECT key, value FROM auth_config
-       WHERE key IN ($1, $2, $3, $4, $5)`,
-      [
-        'admin_password_hash',
-        'user_password',
-        'user_password_expires_at',
-        'cv_password_hash',
-        'cv_password_expires_at',
-      ]
+         WHERE key IN ($1, $2, $3)`,
+      ['admin_password_hash', 'user_password', 'user_password_expires_at']
     )
-
     const config = Object.fromEntries(rows.map((r) => [r.key, r.value]))
 
     // 1) 관리자 검증
     const adminHash = config['admin_password_hash']
     if (adminHash && (await bcrypt.compare(password, adminHash))) {
       const res = NextResponse.json({ role: 'admin' })
-      // 이전 cv_viewer 세션 흔적 제거 — admin 으로 들어왔으면 카운트 차감 대상이 아님.
       clearCvAuthCookie(res)
       return res
     }
@@ -53,11 +46,30 @@ export async function POST(req: NextRequest) {
       return res
     }
 
-    // 3) CV 공개용 비밀번호 — bcrypt 검증 + 만료일 체크 + viewer/auth 쿠키 발급
-    const cvHash = config['cv_password_hash']
-    const cvExpiresAt = Number(config['cv_password_expires_at'] ?? '0')
-    if (cvHash && (await bcrypt.compare(password, cvHash))) {
-      if (!cvExpiresAt || Date.now() > cvExpiresAt) {
+    // 3) CV 공개용 비밀번호 — lookup 해시 매칭 + 만료/active 체크
+    const lookup = lookupHash(password)
+    const cvRows = await query<{
+      id: number
+      password_lookup: string
+      expires_at: string
+      max_uses_per_viewer: number
+      active: boolean
+    }>(
+      `SELECT id, password_lookup, expires_at, max_uses_per_viewer, active
+         FROM cv_passwords WHERE password_lookup = $1
+         LIMIT 1`,
+      [lookup]
+    )
+    const cv = cvRows[0]
+    if (cv) {
+      const expiresAt = Number(cv.expires_at)
+      if (!cv.active) {
+        return NextResponse.json({
+          role: null,
+          error: '이 비밀번호는 비활성화되었습니다.',
+        })
+      }
+      if (!expiresAt || Date.now() > expiresAt) {
         return NextResponse.json({
           role: null,
           error: 'CV 공개용 비밀번호가 만료되었습니다.',
@@ -65,7 +77,7 @@ export async function POST(req: NextRequest) {
       }
 
       const { viewerId, cookieAssigned, freshCookieValue } = resolveCvViewerId(req)
-      const usage = await getCvViewerUsage(viewerId)
+      const usage = await getCvViewerUsage(cv.id, viewerId, cv.max_uses_per_viewer)
 
       const res = NextResponse.json({
         role: 'cv_viewer',
@@ -74,12 +86,12 @@ export async function POST(req: NextRequest) {
           limit: usage.limit,
           remaining: usage.remaining,
         },
-        expiresAt: cvExpiresAt,
+        expiresAt,
       })
       if (cookieAssigned && freshCookieValue) {
         attachCvViewerCookie(res, freshCookieValue)
       }
-      attachCvAuthCookie(res, deriveCvAuthToken(cvHash))
+      attachCvAuthCookie(res, deriveCvAuthToken(cv.id, cv.password_lookup))
       return res
     }
 

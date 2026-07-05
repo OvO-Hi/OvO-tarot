@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { drawRandomCards, assignReversals } from '@/lib/tarot-data'
 import { buildReadingPrompt } from '@/lib/prompt-builder'
-import { CLAUDE_MODEL } from '@/lib/config'
 import type { Spread, Tone, Category, DrawnCard } from '@/types/tarot'
 import {
   getActiveCvViewerSession,
@@ -22,11 +21,15 @@ export async function POST(req: NextRequest) {
     }
 
     // 0. CV viewer 세션이면 사용 횟수 차감 (관리자/일회용 사용자는 차감 없음)
+    //    카운트는 (password_id, viewer_id) 페어 단위.
     const cvSession = await getActiveCvViewerSession(req)
     let cvUsageAfter: { used: number; limit: number; remaining: number } | null = null
     if (cvSession) {
-      // 차감 전에 한도 미리 확인 — race 가 있어도 INSERT 단계에서 한 번 더 거른다.
-      const before = await getCvViewerUsage(cvSession.viewerId)
+      const before = await getCvViewerUsage(
+        cvSession.passwordId,
+        cvSession.viewerId,
+        cvSession.maxUsesPerViewer
+      )
       if (before.remaining <= 0) {
         return NextResponse.json(
           {
@@ -37,7 +40,11 @@ export async function POST(req: NextRequest) {
           { status: 403 }
         )
       }
-      const inc = await incrementCvViewerUsage(cvSession.viewerId)
+      const inc = await incrementCvViewerUsage(
+        cvSession.passwordId,
+        cvSession.viewerId,
+        cvSession.maxUsesPerViewer
+      )
       if (!inc.ok) {
         return NextResponse.json(
           {
@@ -77,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     // 4. Claude API 호출
     const message = await client.messages.create({
-      model: CLAUDE_MODEL,
+      model: 'claude-sonnet-4-20250514',
       max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }],
     })

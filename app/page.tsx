@@ -1,8 +1,12 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import AdminPanel from '@/components/AdminPanel'
-import PasswordGate from '@/components/PasswordGate'
+import PasswordGate, {
+  type AuthRole,
+  type AuthSuccessPayload,
+  type CvViewerUsage,
+} from '@/components/PasswordGate'
 import SiteChrome, { type MainTab } from '@/components/SiteChrome'
 import SituationForm from '@/components/SituationForm'
 import StepLoading from '@/components/StepLoading'
@@ -23,11 +27,52 @@ type Step = 1 | 2 | 3 | 4 | 5 | 6
 
 export default function HomePage() {
   /**
-   * 접근 제어: null이면 비밀번호 게이트만 보여 주고, 통과 후 admin/user 역할을 유지합니다.
+   * 접근 제어: null이면 비밀번호 게이트만 보여 주고, 통과 후 admin/user/cv_viewer 역할을 유지합니다.
    * 홈(로고) 클릭 시에도 role은 건드리지 않고 리딩 플로우만 step 1로 되돌립니다.
    */
-  const [role, setRole] = useState<'admin' | 'user' | null>(null)
+  const [role, setRole] = useState<AuthRole | null>(null)
   const [adminPanelOpen, setAdminPanelOpen] = useState(false)
+
+  /**
+   * cv_viewer (CV 공개용 비번으로 들어온 사용자) 의 사용량과 만료 정보.
+   * 다른 role 일 때는 항상 null.
+   *  - 페이지 진입(로그인 직후): verify API 응답으로 초기값 세팅
+   *  - 새 리딩 성공/거부 시: /api/reading 응답의 cvUsage 로 갱신
+   */
+  const [cvUsage, setCvUsage] = useState<CvViewerUsage | null>(null)
+  const [cvExpiresAt, setCvExpiresAt] = useState<number | null>(null)
+
+  const handleAuthSuccess = useCallback((payload: AuthSuccessPayload) => {
+    setRole(payload.role)
+    if (payload.role === 'cv_viewer') {
+      setCvUsage(payload.usage)
+      setCvExpiresAt(payload.expiresAt)
+    } else {
+      setCvUsage(null)
+      setCvExpiresAt(null)
+    }
+  }, [])
+
+  /** 페이지가 다시 활성화되거나 새로 마운트될 때 cv_viewer 사용량 동기화 */
+  useEffect(() => {
+    if (role !== 'cv_viewer') return
+    const refresh = async () => {
+      try {
+        const res = await fetch('/api/auth/cv-usage')
+        if (!res.ok) return
+        const data = (await res.json()) as { used: number; limit: number; remaining: number }
+        setCvUsage({ used: data.used, limit: data.limit, remaining: data.remaining })
+      } catch {
+        /* 네트워크 오류 시 그대로 둠 — 다음 리딩 응답에서 갱신될 기회 있음 */
+      }
+    }
+    void refresh()
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void refresh()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [role])
 
   const [tab, setTab] = useState<MainTab>('reading')
   const [step, setStep] = useState<Step>(1)
@@ -103,9 +148,28 @@ export default function HomePage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || '리딩에 실패했습니다.')
+      if (!res.ok) {
+        // CV 한도 초과 — 응답의 usage 로 배너 즉시 갱신 + 안내 문구.
+        if (data?.error === 'cv_limit_exceeded' && data?.usage) {
+          setCvUsage({
+            used: data.usage.used,
+            limit: data.usage.limit,
+            remaining: data.usage.remaining,
+          })
+          throw new Error(data.message ?? '이 비밀번호로는 리딩 횟수를 모두 사용했습니다.')
+        }
+        throw new Error(data.error || '리딩에 실패했습니다.')
+      }
       setDrawnCards(data.drawnCards as DrawnCard[])
       setReading(data.reading as string)
+      // cv_viewer 의 경우 응답에 cvUsage 가 포함됨 — 배너 카운트 즉시 갱신.
+      if (data?.cvUsage) {
+        setCvUsage({
+          used: data.cvUsage.used,
+          limit: data.cvUsage.limit,
+          remaining: data.cvUsage.remaining,
+        })
+      }
       setStep(4)
     } catch (e) {
       setError(e instanceof Error ? e.message : '리딩에 실패했습니다.')
@@ -188,8 +252,17 @@ export default function HomePage() {
   }, [step, resetAll])
 
   if (role === null) {
-    return <PasswordGate onSuccess={setRole} />
+    return <PasswordGate onSuccess={handleAuthSuccess} />
   }
+
+  /** YYYY-MM-DD 한국어 표기 — 배너용 */
+  const formatExpiresKo = (ts: number) => {
+    const d = new Date(ts)
+    return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(
+      d.getDate()
+    ).padStart(2, '0')}`
+  }
+  const cvSoldOut = role === 'cv_viewer' && cvUsage !== null && cvUsage.remaining <= 0
 
   return (
     <SiteChrome
@@ -208,6 +281,31 @@ export default function HomePage() {
         ) : undefined
       }
     >
+      {/* CV 공개용 비번으로 들어온 사용자에게만 보이는 사용 횟수 배너 */}
+      {role === 'cv_viewer' && cvUsage && (
+        <div
+          className={`mb-6 rounded-xl border px-4 py-3 text-sm ${
+            cvSoldOut
+              ? 'border-rose-200 bg-rose-50 text-rose-900'
+              : 'border-amber-200 bg-amber-50 text-amber-900'
+          }`}
+          role="status"
+        >
+          <p className="font-medium">
+            {cvSoldOut
+              ? '리딩 횟수를 모두 사용했어요.'
+              : `오늘 남은 리딩: ${cvUsage.remaining} / ${cvUsage.limit} 회`}
+          </p>
+          <p className="mt-1 text-xs leading-relaxed text-[#6e6e73]">
+            {cvSoldOut
+              ? '이 비밀번호로는 더 이상 새 리딩을 시작할 수 없어요. 이미 본 리딩 결과는 그대로 둘러볼 수 있어요.'
+              : `Follow-up 추가 질문은 횟수에 포함되지 않아요.${
+                  cvExpiresAt ? ` · 유효: ${formatExpiresKo(cvExpiresAt)}까지` : ''
+                }`}
+          </p>
+        </div>
+      )}
+
       {tab === 'guestbook' ? (
         <div className="rounded-2xl border border-[#e0e0e5] bg-white/60 p-12 text-center text-[#6e6e73] backdrop-blur-sm">
           <p className="mb-2 font-medium text-[#2c2c2e]">방명록</p>
@@ -225,7 +323,21 @@ export default function HomePage() {
           )}
 
           <div key={step} className="opacity-100 transition-opacity duration-500">
-            {step === 1 && <SituationForm onSubmit={handleSituationSubmit} />}
+            {step === 1 &&
+              (cvSoldOut ? (
+                <div className="rounded-2xl border border-[#e0e0e5] bg-white/80 p-10 text-center backdrop-blur-sm">
+                  <p className="mb-2 text-base font-medium text-[#2c2c2e]">
+                    이 비밀번호의 리딩 횟수를 모두 사용했어요.
+                  </p>
+                  <p className="text-sm leading-relaxed text-[#6e6e73]">
+                    더 이상 새 리딩을 시작할 수 없습니다.
+                    <br />
+                    이미 본 리딩 결과는 다른 탭에서 그대로 둘러볼 수 있어요.
+                  </p>
+                </div>
+              ) : (
+                <SituationForm onSubmit={handleSituationSubmit} />
+              ))}
 
             {step === 2 && (
               <div className="rounded-2xl border border-[#e0e0e5] bg-white/60 px-4 backdrop-blur-sm sm:px-8">
