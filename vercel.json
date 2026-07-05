@@ -4,10 +4,10 @@
       "maxDuration": 60
     },
     "app/api/analyze/route.ts": {
-      "maxDuration": 30
+      "maxDuration": 60
     },
     "app/api/followup/route.ts": {
-      "maxDuration": 30
+      "maxDuration": 60
     }
   }
 }

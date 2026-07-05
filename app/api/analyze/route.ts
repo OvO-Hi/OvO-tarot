@@ -3,6 +3,9 @@ import Anthropic from '@anthropic-ai/sdk'
 import { buildAnalyzePrompt } from '@/lib/prompt-builder'
 import { CLAUDE_MODEL } from '@/lib/config'
 
+// Vercel 함수 실행 시간 상한 (Opus 호출이 30초를 넘길 수 있어 60초로 상향)
+export const maxDuration = 60
+
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {

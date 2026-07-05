@@ -5,6 +5,9 @@ import { CLAUDE_MODEL } from '@/lib/config'
 import { drawRandomCards, assignReversals } from '@/lib/tarot-data'
 import type { Tone, Spread, DrawnCard } from '@/types/tarot'
 
+// Vercel 함수 실행 시간 상한 (추가 질문은 Opus 호출을 2번 하므로 60초로 상향)
+export const maxDuration = 60
+
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 /** Claude 응답 텍스트만 이어붙임 */

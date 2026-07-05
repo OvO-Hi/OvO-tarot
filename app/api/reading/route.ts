@@ -10,6 +10,9 @@ import {
   incrementCvViewerUsage,
 } from '@/lib/cv-viewer'
 
+// Vercel 함수 실행 시간 상한 (Opus 리딩 생성이 30초를 넘길 수 있어 60초로 상향)
+export const maxDuration = 60
+
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
